@@ -76,6 +76,25 @@ app.post('/sellerRequest', async (req, res) => {
     }
 });
 
+app.post('/getSellerStatus/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ error: 'ID is required'+id });
+        }
+        const seller = await db.collection('sellers').findOne({ id });
+        if (!seller) {
+            return res.status(404).json({ error: 'Seller not found' });
+        }
+        res.json(seller.Status);
+
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
 app.post('/admin', async (req, res) => {
     // const {itemname}=req.params
     try {
@@ -87,11 +106,11 @@ app.post('/admin', async (req, res) => {
     }
 });
 
-app.post('/adminAccept', async (req, res) => {
-    // const {itemname}=req.params
+app.post('/adminAccept/:id/:status', async (req, res) => {
+    const {id, status} = req.params
     try {
-        const data = await db.collection("seller").updateOne({seller:req.body.seller},{$set:{status:req.body.status}})
-        res.json(data);
+        const data = await db.collection("sellers").updateOne({id},{$set:{Status:status}});
+        res.json(id);
     } catch (error) {
         console.error('Error fetching data', error);
         
