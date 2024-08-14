@@ -11,7 +11,7 @@ app.get('/', (req, res) => {
 })
  
 app.post('/signin', async(req, res) => {
-    await db.collection("friends").findOne({email:req.body.name})
+    await db.collection("users").findOne({email:req.body.email})
     .then((result)=>{
         if(result?.password===req.body.password){
             res.json({message:"login sucess", values:result})
@@ -23,12 +23,12 @@ app.post('/signin', async(req, res) => {
 })
 app.post('/signup', async (req, res) => {
     try {
-        const result = await db.collection("friends").findOne({ email: req.body.email });
+        const result = await db.collection("users").findOne({ email: req.body.email });
 
         if (result) {
             return res.json({ message: "user already Exists", values: result });
         } else {
-            const output = await db.collection("friends").insertOne({
+            const output = await db.collection("users").insertOne({
                 email: req.body.email,
                 name: req.body.name,
                 password: req.body.password,
@@ -43,7 +43,6 @@ app.post('/signup', async (req, res) => {
     }
 });
 
-
 app.post('/item/:itemname', async (req, res) => {
     const {itemname}=req.params
     try {
@@ -54,6 +53,21 @@ app.post('/item/:itemname', async (req, res) => {
         
     }
 });
+
+app.post('/filter/:itemname/:type', async (req, res) => {
+    const { itemname, type } = req.params;
+    
+    try {
+        const data = await db.collection(itemname).find({ type }).toArray();
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching data', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+
 
 app.post('/seller/:itemname', async (req, res) => {
     const { itemname } = req.params;
@@ -67,14 +81,19 @@ app.post('/seller/:itemname', async (req, res) => {
 });
 
 app.post('/sellerRequest', async (req, res) => {
-    
     try {
-        const result = await db.collection("seller").insertOne(req.body);
+        const result = await db.collection("sellers").insertOne(req.body);
+        if (result.insertedId) {
+            res.status(201).json({ message: 'Seller added successfully', sellerId: result.insertedId });
+        } else {
+            res.status(400).json({ error: 'Failed to add seller' });
+        }
     } catch (e) {
         console.log(e);
-        res.status(500).json({ error: 'Internal Server Error' }); 
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 app.post('/getSellerStatus/:id', async (req, res) => {
     try {
@@ -96,15 +115,20 @@ app.post('/getSellerStatus/:id', async (req, res) => {
 
 
 app.post('/admin', async (req, res) => {
-    // const {itemname}=req.params
     try {
-        const data = await db.collection("seller").find({}).toArray();
-        res.json(data);
+        const usersData = await db.collection('users').find({}).toArray();
+        const sellersData = await db.collection('sellers').find({}).toArray();
+
+        res.json({
+            users: usersData,
+            sellers: sellersData,
+        });
     } catch (error) {
         console.error('Error fetching data', error);
-        
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 app.post('/adminAccept/:id/:status', async (req, res) => {
     const {id, status} = req.params
@@ -119,7 +143,7 @@ app.post('/adminAccept/:id/:status', async (req, res) => {
 
 app.post('/addcart', async (req,res)=>{
     try {
-        const result = await db.collection("cart").insertOne(req.body);
+        const result = await db.collection("user-cart").insertOne(req.body);
     } catch (e) {
         console.log(e);
         res.status(500).json({ error: 'Internal Server Error' }); 
@@ -127,7 +151,7 @@ app.post('/addcart', async (req,res)=>{
 })
 app.post('/cart', async (req,res)=>{
     try {
-        const data = await db.collection("cart").find({}).toArray();
+        const data = await db.collection("user-cart").find({}).toArray();
         res.json(data);
     } catch (error) {
         console.error('Error fetching data', error);
@@ -137,7 +161,7 @@ app.post('/cart', async (req,res)=>{
 
 app.post('/addorder', async (req,res)=>{
     try {
-        const result = await db.collection("cart").insertOne(req.body);
+        const result = await db.collection("user-order").insertOne(req.body);
     } catch (e) {
         console.log(e);
         res.status(500).json({ error: 'Internal Server Error' }); 
@@ -145,13 +169,15 @@ app.post('/addorder', async (req,res)=>{
 })
 app.post('/order', async (req,res)=>{
     try {
-        const data = await db.collection("cart").find({}).toArray();
+        const data = await db.collection("user-order").find({}).toArray();
         res.json(data);
     } catch (error) {
         console.error('Error fetching data', error);
         
     }
 })
+
+
 
 connectToDB(() => {
     app.listen(9000, () => {
