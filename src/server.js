@@ -54,11 +54,11 @@ app.post('/item/:itemname', async (req, res) => {
     }
 });
 
-app.post('/filter/:itemname/:type', async (req, res) => {
-    const { itemname, type } = req.params;
+app.post('/filter/:keyword', async (req, res) => {
+    const { keyword } = req.params;
     
     try {
-        const data = await db.collection(itemname).find({ type }).toArray();
+        const data = await db.collection('Products').find({ KeyWords:{$all:[keyword]}}).toArray();
         res.json(data);
     } catch (error) {
         console.error('Error fetching data', error);
@@ -69,7 +69,7 @@ app.post('/filter/:itemname/:type', async (req, res) => {
 
 
 
-app.post('/seller/:itemname', async (req, res) => {
+app.post('/seller/:itemname', async (req, res) => { //Update This a/c New Db 
     const { itemname } = req.params;
     try {
         const result = await db.collection(itemname).insertOne(req.body);
